@@ -42,8 +42,8 @@ if($do == 'filelist'){
         $perpage = $limit;
     }
     $order = isset($_GET['order']) ? trim($_GET['order']) : 'desc';
-    $orderby = isset($_GET['orderby']) ? trim($_GET['orderby']) : 'dateline';
-    if(!in_array($orderby,array('dateline'))) $orderby = 'dateline';
+    if(!in_array($order, array('desc', 'asc'), true)) $order = 'desc';
+    $orderby = 'dateline';
     $ordersql="order by $orderby $order";
     $limitsql = "limit $start,$perpage";
     $total = 0; //总条数

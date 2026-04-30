@@ -192,6 +192,7 @@ if($do=='delete') {
     }
     exit(json_encode(['success' => true, 'data' => $ret,'sharedata'=>$sharedata]));
 } elseif ($do == 'shareEditSubmit') {//编辑分享提交
+    Hook::listen('check_login');//检查是否登录，未登录跳转到登录界面
     $sid = intval($_GET['sid']);
     $share=C::t('pichome_share')->fetch($sid);
     $title = isset($_GET['title']) ? getstr($_GET['title']) : '';
@@ -227,7 +228,7 @@ if($do=='delete') {
 
     exit(json_encode(['success' => true,'data'=>$data]));
 } elseif ($do == 'shareAddSubmit') {//创建分享提交
-
+    Hook::listen('check_login');//检查是否登录，未登录跳转到登录界面
     $title = isset($_GET['title']) ? getstr($_GET['title']) : '';
     if(empty($title)){
         exit(json_encode(['success' => false, 'msg' => lang('share_title_empty')]));
@@ -276,8 +277,8 @@ if($do=='delete') {
 		$perpage = $limit;
 	}
     $order = isset($_GET['order']) ? trim($_GET['order']) : 'desc';
-    $orderby = isset($_GET['orderby']) ? trim($_GET['orderby']) : 'dateline';
-    if(!in_array($orderby,array('dateline'))) $orderby = 'dateline';
+    if(!in_array($order, array('desc', 'asc'), true)) $order = 'desc';
+    $orderby = 'dateline';
     $ordersql="order by $orderby $order";
 	$limitsql = "limit $start,$perpage";
 	$total = 0; //总条数
