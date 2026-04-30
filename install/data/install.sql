@@ -662,7 +662,7 @@ CREATE TABLE `dzz_hooks` (
 DROP TABLE IF EXISTS `dzz_icon`;
 CREATE TABLE `dzz_icon` (
   `did` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `domain` varchar(255) NOT NULL,
+  `domain` varchar(200) NOT NULL,
   `reg` varchar(255) NOT NULL DEFAULT '' COMMENT '匹配正则表达式',
   `ext` varchar(30) NOT NULL DEFAULT '',
   `pic` varchar(255) NOT NULL,
