@@ -880,7 +880,7 @@ CREATE TABLE `dzz_organization` (
   `maxspacesize` bigint(20) NOT NULL DEFAULT '0' COMMENT '0：不限制，-1表示無空間',
   `indesk` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否创建快捷方式',
   `available` tinyint(1) NOT NULL DEFAULT '1' COMMENT '是否启用',
-  `pathkey` varchar(255) NOT NULL DEFAULT '',
+  `pathkey` varchar(200) NOT NULL DEFAULT '',
   `type` int(10) UNSIGNED NOT NULL DEFAULT '0' COMMENT '0一般机构，1群组机构',
   `desc` varchar(200) NOT NULL DEFAULT '' COMMENT '群组描述',
   `groupback` int(11) UNSIGNED NOT NULL COMMENT '群组背景图',
