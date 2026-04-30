@@ -61,6 +61,9 @@
 			},
 			MainPageTouchStart(event){
 				var self = this;
+				if(event.touches.length>=2){
+					return;
+				}
 				if(self.showdata[self.showdataindex].loading || self.TouchImg.move || self.InformationPopup){
 					self.TouchPage.move = false;
 					return false;
@@ -71,10 +74,14 @@
 			},
 			MainPageTouchMove(event){
 				var self = this;
+				if(event.touches.length>=2){
+					return;
+				}
 				if(self.showdata[self.showdataindex].loading || self.TouchImg.move || self.InformationPopup){
 					self.TouchPage.move = false;
 					return false;
 				}
+
 				event.preventDefault();
 				var sectouch = event.touches[0];
 				self.TouchPage.distance = sectouch.pageX - self.TouchPage.clickX;
@@ -133,6 +140,9 @@
 			},
 			MainPageTouchEnd(event){
 				var self = this;
+				if(event.touches.length>=2){
+					return;
+				}
 				if(!self.TouchPage.move || self.InformationPopup){
 					return false;
 				}
