@@ -145,7 +145,7 @@
             document.querySelector('html').style.backgroundColor = '#fff'
         }
     }
-    const theme = localStorage.getItem('theme');
+    const theme = localStorage.getItem('theme') || 'light';
     const previewElement = document.getElementById('preview');
     const outlineElement = document.getElementById('outline');
     previewElement.addEventListener('click', function (event) {
