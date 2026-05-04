@@ -1,0 +1,459 @@
+<!--{template common/container/pc/header_start}-->
+<script src="static/vant/index.min.js?{VERHASH}" type="text/javascript" charset="utf-8"></script>
+<script src="{MOD_PATH}/template/detail/mobile/assets/js/pinchzoom.js?{VERHASH}" type="text/javascript" charset="utf-8"></script>
+<script src="{MOD_PATH}/template/detail/mobile/assets/js/JsCollect.js?{VERHASH}" type="text/javascript" charset="utf-8"></script>
+<link rel="stylesheet" type="text/css" href="static/vant/index.css?{VERHASH}" />
+<link rel="stylesheet" type="text/css" href="{MOD_PATH}/template/detail/mobile/assets/css/details.css?{VERHASH}" />
+<script type="text/javascript" src="static/js/watermark.js?{VERHASH}"></script>
+<style>
+	.screen-classify-collapse .van-cell{
+		background-color: transparent;
+		margin-bottom: 6px;
+	}
+	.screen-classify-collapse .van-collapse-item.active>.van-cell{
+		background-color: var(--bg-poperHover);
+		border-radius: 999px;
+	}
+	.screen-classify-collapse .van-cell::after,
+	.screen-classify-collapse .van-hairline--top-bottom::after,
+	.screen-classify-collapse .van-collapse-item--border::after{
+		display: none;
+	}
+	.screen-classify-collapse .van-collapse-item__content{
+		background-color: transparent;
+		padding: 0;
+		padding-left: 1rem;
+	}
+	.screen-classify-collapse .van-cell__value{
+		flex: none;
+	}
+	.van-popup{
+		overflow: unset;
+	}
+	.van-popup .vam-popup-title {
+		height: 40px;
+		font-weight: 700;
+		position: absolute;
+		top: -40px;
+		left: 0;
+		width: 100%;
+		padding: 0 12px;
+		font-size: 18px;
+		color: #FFFFFF;
+	}
+	.footer-popup .van-search-box {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+	}
+	.seasrch-popup .search-val-box {
+		padding: 0 12px;
+		height: 100%;
+		overflow: auto;
+		position: relative;
+	}
+	.footer-popup .btn-bottom {
+		padding: 10px;
+		height: 70px;
+		position: absolute;
+		width: 100%;
+		bottom: 0;
+		left: 0;
+	}
+	.screen-classify-collapse .van-collapse-item.active>.van-cell {
+		background-color: var(--el-color-primary-light-9);;
+		border-radius: 999px;
+	}
+	.van-cell {
+        border-bottom: 1px solid var(--van-cell-border-color);
+	}
+	.van-cell .van-cell.van-field{
+		border: 0;
+	}
+</style>
+<script>
+	function debounce(fun, delay) {
+		var time;
+		return function(args) {
+			var that = this;
+			var _args = args;
+			if (time) clearTimeout(time);
+			time = setTimeout(function() {
+				fun.call(that, _args)
+			}, delay)
+		}
+	};
+</script>
+<!--{template common/container/pc/header_end}-->
+<div id="dzzoffice">
+	<div
+		id="DetailPopup"
+		class="detail-popup" 
+		:class="{
+			'is-padding':previews.data.length,
+			'NotFooter':!(showdata[showdataindex]&& showdata[showdataindex].data.footer),
+			'full':full
+		}">
+		<!--{template detail/mobile/components/details/message}-->
+		<van-nav-bar class="header-top">
+			<!--{template detail/mobile/components/details/header}-->
+		</van-nav-bar>
+		<div 
+			class="detail-popup-translate" 
+			ref="detail_popup_translate" 
+			@click="MainFulloverlay"
+			@touchstart="MainPageTouchStart"
+			@touchmove="MainPageTouchMove" 
+			@touchend="MainPageTouchEnd">
+			<!--{template detail/mobile/components/details/main}-->
+		</div>
+		<ul class="album-imglist"  v-if="previews.data.length">
+			<template v-for="(item,index) in previews.data" >
+				<li class="album-item" 
+					:class="{'is-active':index==previews.active}" 
+					:key="index" 
+					@click="previewClick(index)">
+					<img :src="item.spath?item.spath:'dzz/images/extimg/'+imagesData.filetype+'.png'" alt="">
+				</li>
+			</template>
+			
+		</ul>
+		<div class="footer-tabbar" v-show="showdata[showdataindex] && showdata[showdataindex].data.footer">
+			<!--{template detail/mobile/components/details/footer}-->
+		</div>
+		<!--{template detail/mobile/components/details/classify}-->
+		<!--{template detail/mobile/components/details/setGrade}-->
+		<!--分享对话框加载-->
+
+	</div>
+	<!--{eval  include template('shareAddDialog_m','./dzz/shares/template/')}-->
+</div>
+<script type="text/javascript">
+	const { showToast, showLoadingToast, showSuccessToast, showFailToast, closeToast, showConfirmDialog, showNotify } = vant;
+	const { createApp, reactive, toRefs, toRef, ref, onMounted, nextTick, watch, computed, onBeforeUpdate } = Vue;
+	const dzzoffice = createApp({
+		el: '#dzzoffice',
+		data: function() {
+			return {
+				DocumentAdminId:'$_G['adminid']',
+				paths:['{$path}'],
+				path:'{$path}',
+				ridIndex:0,
+				showdata:[],
+				showdataindex:0,
+				PinchZoom:null,
+				storagedata:{},
+				TouchPage:{
+					clickX:0,
+					distance:0,
+					move:true
+				},
+				TouchImg:{
+					move:false,
+				},
+				full:false,
+				ParamImages:{
+					operation:{
+						rids:[]
+					}
+				},
+				InformationPopup:false,
+				GetParam:null,
+				DocumentThemeColor:'',//dark,
+				DocumentHref:'',
+				isadmin:'$isadmin',
+				previews:{
+					active:0,
+					data:{}
+				}
+			};
+		},
+		watch:{
+			path:{
+				handler(val){
+					<!--{if $opentype=='current'}-->
+					if(window.parent.dzzoffice && window.parent.dzzoffice.WindowThis && window.parent.dzzoffice.WindowThis.ImagePageTurning){
+						window.parent.dzzoffice.WindowThis.ImagePageTurning(val);
+					}
+					
+					<!--{/if}-->
+					window.location.hash = 'path='+val;
+				},
+				deep:true
+			},
+			ridIndex:{
+				handler(val){
+					var self = this;
+					sessionStorage.setItem('selectindex',val);
+				},
+				deep:true
+			},
+			'ParamImages.operation.rids':{
+				handler(val){
+					// console.log(val)
+				},
+				deep:true
+			},
+			full:{
+				handler(val){
+					var self = this;
+					if(this.PinchZoom){
+						if(val){
+							this.PinchZoom.enable();
+						}else{
+							this.PinchZoom.disable();
+						}
+					}
+					self.$nextTick(function(){
+						document.querySelector('.img-box').style.height = document.querySelector('.detail-popup-content').clientHeight+'px'
+					});
+					
+				},
+				deep:true
+			},
+			DocumentThemeColor:{
+				handler(newval){
+					document.querySelector('html').className = newval
+				},
+				deep:true,
+				// immediate:true
+			}
+			
+		},
+		computed: {
+	
+		},
+		created() {
+			//主题颜色
+			let url = sessionStorage.getItem('href');
+			this.DocumentHref = url;
+			let theme = localStorage.getItem('theme');
+			if(theme){
+				this.DocumentThemeColor=theme;
+			}else{
+				this.DocumentThemeColor = 'light'
+			}
+
+			this.ridIndex = 0;
+			this.CommonOrder();
+		},
+		mixins:[HeaderMixin,MainMixin,MessageMixin,DetailGradeMixin,FooterMixin,ImagesClassifyMixin,ShareAddDialogMixin],
+		methods:{
+			async CommonOrder(){
+				let self = this;
+				let NewShowData = [];
+
+				NewShowData.push({
+						type:'center',
+						loading:true,
+						id:self.path,
+						data:{}
+					});
+
+				self.showdata = NewShowData;
+				self.PinchZoom = null;
+				for(let i in NewShowData){
+					if(NewShowData[i].type == 'center'){
+						this.showdataindex = i;
+					}
+					if(NewShowData[i].loading){
+						await this.GetData(i,NewShowData[i]);
+					}else{
+						if(NewShowData[i].type == 'center'){
+							self.ParamImages.operation.rids = [NewShowData[i].data.rid];
+							if(NewShowData[i].data.opentype == 'image' || NewShowData[i].data.opentype == 'other'){
+								this.CommonZomm(NewShowData[i]);
+							}
+						}
+						
+					}
+					
+					
+				}
+				this.previews.active = 0;
+				this.previews.data = [];
+				self.$nextTick(function(){
+					let curr = self.showdata.find(function(current){
+						return current.type == 'center';
+					});
+					if(curr && curr.data.preview && curr.data.preview.length){
+						self.previews.data = curr.data.preview;
+						curr.data.originalimg = curr.data.preview[0].lpath;
+					}else{
+
+					}
+				})
+			},
+			previewClick(index){
+				let self = this;
+				if(!self.storagedata[self.paths[self.ridIndex]])return false;
+				let id = self.storagedata[self.paths[self.ridIndex]].rid;
+				let curr = self.showdata.find(function(current){
+					return current.type == 'center';
+				});
+				if(curr){
+					curr.data.originalimg = this.previews.data[index].lpath;
+				}
+				this.previews.active = index;
+			},
+			async GetData(index,fitem){
+				var self = this;
+				var res = await axios.post(MOD_URL+'&op=detail&&operation=fetch',{
+					path:fitem.id,
+					isadmin:this.isadmin
+				});
+				if(res == 'intercept'){
+					return false;
+				}
+				var json = res.data;
+				var item = json.resourcesdata;
+				if(json.error){
+					if(parseInt(json.status) == 2){
+						showToast({
+							type:'fail',
+							message:json.error,
+							forbidClick:true,
+							duration:0
+						});
+					}else if(parseInt(json.status) == 0){
+						window.location.href = 'user.php?mod=login&referer=$referer';
+					}
+					return false;
+				}
+				
+				document.title = item.name+'-$_G['setting']['sitename']';
+				// self.ParamImages.operation.rids = [item.rid];
+				var colors = [];
+				
+				if(item.colors){
+					for(var c in item.colors){
+						colors.push(item.colors[c]);
+					}
+				}
+				item.colors = colors;
+				var tags = [];
+				if(item.tag){
+					for(var t in item.tag){
+						var tstr = {
+							key:t,
+							val:item.tag[t]
+						};
+						tags.push(tstr);
+					}
+				}
+				item.tag = tags;
+				
+				var foldernames = [];
+				if(item.foldernames){
+					for(var f in item.foldernames){
+						var fstr = {
+							key:f,
+							val:item.foldernames[f]
+						};
+						foldernames.push(fstr);
+					}
+				}
+				item.foldernames = foldernames;
+				item.download = item.download;
+				item.share = item.share;
+				if(item.link || item.download || parseInt(self.DocumentAdminId) || item.share || parseInt(item.collection)){
+					item['footer'] =  true;
+				}else{
+					item['footer'] = false;
+				}
+				
+				if(item.opentype == 'video'){
+					var boxW = document.body.clientWidth;
+					var ra = boxW/parseFloat(item['width'])
+					item['fwidth'] = boxW;
+					item['fheight'] = ra*parseFloat(item['height']);
+				}
+				self.showdata[index].loading = false;
+				self.showdata[index].data = item;
+				
+				self.storagedata[fitem.id] = item;
+				self.$forceUpdate();
+				if(fitem.type == 'center'){
+					self.ParamImages.operation.rids = [item.rid];
+					if(item.opentype == 'image' || item.opentype == 'other'){
+						self.$nextTick(function(){
+							self.CommonZomm(fitem);
+						})
+						
+					}
+				}
+				var paths = sessionStorage.getItem('imgs');
+				if(paths){
+					paths = paths.split(',');
+					if(self.paths.length != paths.length){
+						self.paths = paths;
+					}
+				}	
+			},
+			CommonZomm(item){
+				var self = this;
+				self.$nextTick(function(){
+					if(self.$refs['BoxImg_'+item.id+'center']){
+						self.$refs['BoxImg_'+item.id+'center'][0].style.height = document.querySelector('.detail-popup-content').offsetHeight+'px';
+						self.PinchZoom = new PinchZoom(self.$refs['BoxImg_'+item.id+'center'][0]);
+						if(!self.full){
+							self.PinchZoom.disable()
+						}
+					}
+				})
+			},
+			CommonCopyTxt(text){
+				var self = this;
+				var input = document.createElement('input'); input.setAttribute('id', 'copyInput');
+				input.setAttribute('value', text);
+				document.getElementsByTagName('body')[0].appendChild(input);
+				document.getElementById('copyInput').select();
+				document.execCommand('copy');
+				document.getElementById('copyInput').remove();
+				showSuccessToast('{lang copy_clipboard}');
+			}
+		},
+		mounted() {
+			var self = this;
+			if(window.history && window.history.pushState) {
+				history.pushState(null, null, document.URL);
+				window.addEventListener('popstate', function(item){
+					if(!self.TouchPage.move){
+						let div = window.parent.document.querySelector('.Details-Iframe');
+						if(div){
+							div.remove();
+						}
+					}
+				}, false);
+			}
+			<!--{if $opentype=='current'}-->
+			
+				window.parent.document.querySelector('.Details-Iframe-wrapper').lastChild.style.opacity  = "";
+			<!--{/if}-->
+			window.addEventListener('message',function(event){
+				var data = event.data.data;
+				if(!data) return;
+				var paths = [];
+				for(var i in data){
+					paths.push(data[i].dpath);
+				}
+				self.paths = paths;
+			});
+			// if(window.__canvasWM){
+			// 	window.__canvasWM({
+			// 		width:'300px',
+			// 		height:'220px',
+			// 		content: "{eval echo $_G['username'].' '.dgmdate($_G['timestamp'],'Y-m-d H:i')}",
+			// 	});
+			// }
+		}
+	});
+	dzzoffice.use(vant);
+	dzzoffice.component('collect-all', collect_all);
+	// 屏蔽警告信息
+	dzzoffice.config.warnHandler = function(){return null};
+	dzzoffice.mount('#dzzoffice');
+</script>
+
+<!--{template common/container/pc/footer}-->

@@ -253,7 +253,7 @@
                 });
                 document.getElementById('copyInput').remove();
             },
-            getData(){ 
+            getData(){
                 let self = this;
                 let param = {
                     page:this.paramData.page,
@@ -317,8 +317,8 @@
 				}).catch(function (error) {
 					console.log(error);
 				});
-					
-				  
+
+
 			},
             handleEdit(sid){
                 let self=this;
@@ -347,6 +347,7 @@
 	}
 	dzzoffice.component('comavatar', comavatar);
     dzzoffice.component('international',international);
+    dzzoffice.component('notification',notification);
 	// 屏蔽警告信息
 	dzzoffice.config.warnHandler = function(){return null};
 	dzzoffice.mount('#dzzoffice');
