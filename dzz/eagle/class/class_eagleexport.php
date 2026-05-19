@@ -958,42 +958,42 @@ class eagleexport
             return true;
         }
         foreach ($data as $v) {
+            $delrid = '';
             if (dzz_process::getlocked($this->processname)) exit('vapp isdeleted');
             if ($v['isdelete']) {
-                $delrids[] = $v['rid'];
+                $delrid = $v['rid'];
             } else {
                 $id = C::t('#eagle#eagle_record')->fetch_eid_by_rid($v['rid'], $this->appid);
                 if (!$id) {
-                    $delrids[] = $v['rid'];
+                    $delrid = $v['rid'];
                 } else {
                     $filejson = ($this->iscloud) ? $this->path . '/images/' . $id . '.info/metadata.json' : $this->path . BS . 'images' . BS . $id . '.info' . BS . 'metadata.json';
                     if (!IO::checkfileexists($filejson)) {
-                        $delrids[] = $v['rid'];
+                        $delrid = $v['rid'];
                     }
                 }
-
             }
-
+            if($delrid &&  C::t('pichome_resources')->delete_by_rid($delrid)){
+                $delrids[] = $delrid;
+            }else {
+                $this->lastid++;
+            }
 
         }
         if (!empty($delrids)) {
+            $filenum = $total - count($delrids);
             //如果有需要删除的，删除后，则重新查询上一页数据
-            C::t('pichome_resources')->delete_by_rid($delrids);
-            if ($this->lastid == 1) {
-                $percent = round(($this->checklimit / $total) * 100);
-            } else {
-                $percent = round((($this->lastid - 1) * $this->checklimit / $total) * 100);
-            }
-            C::t('pichome_vapp')->update($this->appid, array('lastid' => $this->lastid, 'percent' => $percent, 'state' => 3));
+            $percent = round(($this->lastid / $total) * 100);
+            $percent = ($percent > 100) ? 100:$percent;
+            C::t('pichome_vapp')->update($this->appid, array('lastid' => $this->lastid, 'percent' => $percent, 'state' => 3, 'filenum' => $filenum));
         } else {
-            if ($this->lastid == 1) {
-                $percent = round(($this->checklimit / $total) * 100);
-            } else {
-                $percent = round((($this->lastid - 1) * $this->checklimit / $total) * 100);
-            }
-            $percent = ($percent > 100) ? 100 : $percent;
-            C::t('pichome_vapp')->update($this->appid, array('lastid' => $this->lastid + 1, 'percent' => $percent, 'state' => 3));
+
+            $percent = round(($this->lastid / $total) * 100);
+            $percent = ($percent > 100) ? 100:$percent;
+
+            C::t('pichome_vapp')->update($this->appid, array('lastid' => $this->lastid, 'percent' => $percent, 'state' => 3));
         }
+        return true;
     }
 
     public function exportfile($id, $filemetadata)

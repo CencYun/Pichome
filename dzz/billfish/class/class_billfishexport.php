@@ -1312,11 +1312,13 @@ class billfishxport
             return true;
         }
         foreach ($data as $v) {
+            $delrid='';
             if(dzz_process::getlocked($this->processname)) exit('vapp isdeleted');
             $rid = $v['rid'];
             $iid = DB::result_first("select bid from %t where rid = %s and appid = %s", array('billfish_record', $rid, $this->appid));
             if (!$iid) {
-                $delrids[] = $rid;
+                $delrid = $rid;
+
             } else {
                 if ($this->version < 30) {
                     $sql = "select count(s.id) as num from source s left join res_prop rp on s.id = rp.iid where rp.action =0 and s.id = $iid";
@@ -1328,31 +1330,27 @@ class billfishxport
                 }
                 $numdata = $this->fetch($sql);
                 if (!isset($numdata['num']) || !$numdata['num']) {
-                    $delrids[] = $rid;
+                    $delrid = $rid;
                 }
             }
-
+            if($delrid &&  C::t('pichome_resources')->delete_by_rid($delrid)){
+                $delrids[]=$delrid;
+            }else {
+                $this->lastid++;
+            }
         }
         if (!empty($delrids)) {
-            $this->filenum = $this->filenum - count($delrids);
+            $filenum = $total - count($delrids);
             //如果有需要删除的，删除后，则重新查询上一页数据
-            C::t('pichome_resources')->delete_by_rid($delrids);
-            if ($this->lastid == 1) {
-                $percent = round(($this->checklimit / $total) * 100);
-            } else {
-                $percent = round((($this->lastid - 1) * $this->checklimit / $total) * 100);
-            }
-            C::t('pichome_vapp')->update($this->appid, array('lastid' => $this->lastid, 'percent' => $percent, 'state' => 3, 'filenum' => $this->filenum));
+            $percent = round(($this->lastid / $total) * 100);
+            $percent = ($percent > 100) ? 100:$percent;
+            C::t('pichome_vapp')->update($this->appid, array('lastid' => $this->lastid, 'percent' => $percent, 'state' => 3, 'filenum' => $filenum));
         } else {
-            if ($this->lastid == 1) {
-                $percent = round(($this->checklimit / $total) * 100);
-            } else {
-                $percent = round((($this->lastid - 1) * $this->checklimit / $total) * 100);
-            }
-            $percent = ($percent > 100) ? 100 : $percent;
-            C::t('pichome_vapp')->update($this->appid, array('lastid' => $this->lastid + 1, 'percent' => $percent, 'state' => 3));
+            $percent = round(($this->lastid / $total) * 100);
+            $percent = ($percent > 100) ? 100:$percent;
+            C::t('pichome_vapp')->update($this->appid, array('lastid' => $this->lastid, 'percent' => $percent, 'state' => 3));
         }
-
+        return true;
     }
 
     //检查目录数据

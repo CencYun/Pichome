@@ -25,7 +25,7 @@ class localexport
     private $filenum = 0;//导入后总文件数
     private $filenum1 = 0;//总文件数
     private $getinfosizelimit = 100;//限制获取信心文件大小，单位M
-    private $checklimit = 1000;
+    private $checklimit = 100;
     private $onceexportnum = 100;
     private $oncegetinfonum = 1000;
     private $getinfonum = 0;
@@ -467,7 +467,7 @@ class localexport
                     }
                     $percent = floor(($this->lastid / $this->filenum) * 100);
                     $percent = ($percent > 100) ? 100 : $percent;
-                   $lastid = $this->lastid;
+                    $lastid = $this->lastid;
 
                     $indexdata = ['rid'=>$rid,'appid'=>$this->appid,'dateline'=>$mtime,'ext'=>$ext,'apptype'=>1,'getmd5'=>1];
                     Hook::listen('addfileafter',$indexdata);
@@ -558,12 +558,13 @@ class localexport
     public function check_file($total)
     {
         if ($this->lastid < 1) $this->lastid = 1;
-        $limitsql = ($this->lastid - 1) * $this->checklimit . ',' . $this->checklimit;
+        $limitsql = ($this->lastid) . ',' . $this->checklimit;
         if(dzz_process::getlocked($this->processname)) exit('vapp isdeleted');
         $delrids = [];
         $data = DB::fetch_all("select rid,name,ext from %t where appid = %s order by lastdate asc limit $limitsql ", array('pichome_resources', $this->appid));
 
-        if (empty($data)) {
+        if (empty($data))
+        {
 
 
             C::t('pichome_vapp')->update($this->appid, array('percent' => 0, 'state' => 4, 'lastid' => 0, 'donum' => 0));
@@ -621,34 +622,36 @@ left join %t o on o.rid = ra.rid where ra.appid = %s and ((ra.isget = 0 and ISNU
         foreach ($data as $v) {
             $rid = $v['rid'];
             $filepath = DB::result_first("select `path` from %t where rid = %s and appid = %s", array('pichome_resources_attr', $rid, $this->appid));
+
             $filepath = str_replace(array('/', './', '\\'), BS, $this->path . BS . $filepath);
             if (!IO::checkfileexists($filepath) || ($this->allowext && !preg_match('/^(' . $this->allowext . ')$/i', $v['name'])) || ($this->notallowext && preg_match('/^(' . $this->notallowext . ')$/i', $v['name']))) {
+                // var_dump($ret);exit($rid.'==='.$filepath."\n");
+                if(C::t('pichome_resources')->delete_by_rid($rid)){
+                    $delrids[] = $rid;
 
-                $delrids[] = $rid;
+                }else{
+                    $this->lastid++;
+                }
+
+            }else{
+                $this->lastid++;
             }
-
-
 
         }
+
         if (!empty($delrids)) {
-            $this->filenum = $this->filenum - count($delrids);
+            $filenum = $total - count($delrids);
             //如果有需要删除的，删除后，则重新查询上一页数据
-            C::t('pichome_resources')->delete_by_rid($delrids);
-            if($this->lastid == 1){
-                $percent = round(($this->checklimit / $total) * 100);
-            }else{
-                $percent = round((($this->lastid - 1) * $this->checklimit / $total) * 100);
-            }
+            $percent = round(($this->lastid / $total) * 100);
+
             $percent = ($percent > 100) ? 100:$percent;
-            C::t('pichome_vapp')->update($this->appid, array('lastid' => $this->lastid, 'percent' => $percent, 'state' => 3, 'filenum' => $this->filenum));
+            C::t('pichome_vapp')->update($this->appid, array('lastid' => $this->lastid, 'percent' => $percent, 'state' => 3, 'filenum' => $filenum));
         } else {
-            if($this->lastid == 1){
-                $percent = round(($this->checklimit / $total) * 100);
-            }else{
-                $percent = round((($this->lastid - 1) * $this->checklimit / $total) * 100);
-            }
+
+            $percent = round(($this->lastid / $total) * 100);
             $percent = ($percent > 100) ? 100:$percent;
-            C::t('pichome_vapp')->update($this->appid, array('lastid' => $this->lastid + 1, 'percent' => $percent, 'state' => 3));
+
+            C::t('pichome_vapp')->update($this->appid, array('lastid' => $this->lastid, 'percent' => $percent, 'state' => 3));
         }
     }
 
