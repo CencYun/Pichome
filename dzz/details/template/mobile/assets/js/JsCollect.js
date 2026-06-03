@@ -2,8 +2,8 @@
 const collect_all = {
     name:'collect_all',
     template:`
-		<van-collapse v-model="parammodel.active" :border="false">
-			<van-collapse-item v-for="(item,index) in paramdata" :key="item.cid" :name="item.cid"  :class="{'active':parammodel.checkedvalue.indexOf(item.cid)>-1}" :ref="setDom">
+		<el-collapse v-model="parammodel.active" :accordion="false">
+			<el-collapse-item v-for="(item,index) in paramdata" :key="item.cid" :name="item.cid"  :class="{'active':parammodel.checkedvalue.indexOf(item.cid)>-1}" :ref="setDom">
 				<template #title>
 					<div @click.stop.self.prevent="select(item)">
 						{{item.catname}}
@@ -11,25 +11,25 @@ const collect_all = {
 				</template>
 				<template #right-icon>
 					<template v-if="!item.leaf">
-						<i @click.stop="toggle(item,index)" class="van-icon van-icon-arrow van-cell__right-icon"></i>
+						<i @click.stop="toggle(item,index)" class="el-icon-arrow-right el-collapse-item__arrow"></i>
 					</template>
 					<template v-else>
 						<div style="width: 20px;"></div>
 					</template>
 				</template>
-				<div class="van-cell" v-if="item.loading">
-					<van-loading type="spinner" size="24px" />
+				<div class="el-collapse-item__content" v-if="item.loading">
+					<el-icon class="is-loading"><el-icon-loading /></el-icon>
 				</div>
 				<template v-if="item.children && item.children.length">
 					<collect-all
-						:parammodel="parammodel" 
-						:paramdata="item.children" 
-						@select="select" 
+						:parammodel="parammodel"
+						:paramdata="item.children"
+						@select="select"
 						@append="append"
 						:level="parseInt(level)+1"></collect-all>
 				</template>
-			</van-collapse-item>
-		</van-collapse>
+			</el-collapse-item>
+		</el-collapse>
     `,
     props: {
 		paramdata:{
@@ -119,14 +119,17 @@ const collect_all = {
 		}
 		function toggle(item,index){
 			if(domList.length){
-				var expanded = domList[index].expanded;
-				if(!item.loaded){
-					getdata(item);
+				var activeNames = parammodel.active;
+				var idx = activeNames.indexOf(item.cid);
+				if(idx > -1){
+					activeNames.splice(idx, 1);
+				}else{
+					if(!item.loaded){
+						getdata(item);
+					}
+					activeNames.push(item.cid);
 				}
-				nextTick(function(){
-					domList[index].toggle(!expanded.value);
-				});
-				
+				parammodel.active = [...activeNames];
 			}
 		};
 		function append(data){

@@ -1,6 +1,6 @@
 const screenclassify = {
-	template: `<van-collapse v-model="parammodel.activeNames" :border="false">
-					<van-collapse-item v-for="item in paramdata" :key="item.fid" :name="item.fid" disabled  :class="{'active':parammodel.value.indexOf(item.fid)>-1}" :ref="'collapse_'+item.fid">
+	template: `<el-collapse v-model="parammodel.activeNames" :accordion="false">
+					<el-collapse-item v-for="item in paramdata" :key="item.fid" :name="item.fid" :disabled="true"  :class="{'active':parammodel.value.indexOf(item.fid)>-1}" :ref="'collapse_'+item.fid">
 						<template #title>
 							<div  @click.stop="ScreenClassifyClick(item)">
 								{{item.fname}}
@@ -8,20 +8,20 @@ const screenclassify = {
 						</template>
 						<template #right-icon>
 							<template v-if="!item.leaf">
-								<i @click.stop="ScreenClassifyToggle(item)" class="van-icon van-icon-arrow van-cell__right-icon"></i>
+								<i @click.stop="ScreenClassifyToggle(item)" class="el-icon-arrow-right el-collapse-item__arrow"></i>
 							</template>
 							<template v-else>
 								<div style="width: 20px;"></div>
 							</template>
 						</template>
-						<div class="van-cell" v-if="item.loading">
-							<van-loading type="spinner" size="24px" />
+						<div class="el-collapse-item__content" v-if="item.loading">
+							<el-icon class="is-loading"><el-icon-loading /></el-icon>
 						</div>
 						<template v-if="item.children && item.children.length">
 							<screenclassify :parammodel="parammodel" :paramdata="item.children" @screenclassifychange="screenclassifychange" :alldata="alldata" :expandedkeys="expandedkeys"></screenclassify>
 						</template>
-					</van-collapse-item>
-				</van-collapse>`,
+					</el-collapse-item>
+				</el-collapse>`,
 	props:['paramdata','parammodel','alldata','expandedkeys'],
 	data: function() {
 		return {
@@ -157,21 +157,19 @@ const screenclassify = {
 		},
 		ScreenClassifyToggle(item){
 			var self = this;
-			
+
 			var fid = item.fid;
-			
-			if(self.$refs['collapse_'+fid] && self.$refs['collapse_'+fid].length){
-				var expanded = self.$refs['collapse_'+fid][0].expanded;
-				if(!expanded && !item.loaded){
+			var activeNames = this.parammodel.activeNames;
+			var idx = activeNames.indexOf(fid);
+			if(idx > -1){
+				activeNames.splice(idx, 1);
+			}else{
+				if(!item.loaded){
 					self.ScreenGetdataClassify(item);
 				}
-				self.$nextTick(function(){
-					setTimeout(function(){
-						self.$refs['collapse_'+fid][0].toggle();
-					},100)
-				});
-				
+				activeNames.push(fid);
 			}
+			this.parammodel.activeNames = [...activeNames];
 		},
 		async ScreenGetdataClassify(data){
 			var self = this;

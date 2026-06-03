@@ -4,32 +4,26 @@
 	:class="{'prev':item.type=='left','next':item.type=='right','center':item.type=='center','opacity':item.loading}"
 	:key="item.data.opentype!='video'?item.data.rid+item.type:''"
 	:ref="'Detail_'+item.data.rid">
-	<template v-if="item.loading">
-		<van-loading class="custom-load" size="24px" type="spinner" color="var(--header-text)" vertical>{lang loading}</van-loading>
-	</template>
-	<template v-else>
-		<div class="detail-popup-img">
-			<template v-if="item.data.iniframe">
-				<div class="video-box" :style="{'height':item.data.fheight?item.data.fheight+'px':'100%'}">
-					<iframe
-						style="border: 0px;"
-						:src="item.data.iniframe" 
-						width="100%" 
-						height="100%"></iframe>
-				</div>
-			</template>
-			<template v-else>
-				<div class="img-box" :ref="'BoxImg_'+item.id+item.type">
-					<img :src="item.data.icondata" class="image-viewer__img thumbnail" />
-					<img
-						@load="MainImgload"
-						:data-rid="item.data.rid"
-						:src="item.data.originalimg"
-						class="image-viewer__img max opacity" />
-				</div>
-			</template>
+	<div v-if="item.loading" class="loading-wrapper">
+		<el-icon class="custom-load is-loading"><el-icon-loading /></el-icon>
+	</div>
+	<div v-else class="detail-popup-img">
+		<div v-if="item.data.iniframe" class="video-box" :style="{'height':item.data.fheight?item.data.fheight+'px':'100%'}">
+			<iframe
+				style="border: 0px;"
+				:src="item.data.iniframe" 
+				width="100%" 
+				height="100%"></iframe>
 		</div>
-	</template>
+		<div v-else class="img-box" :ref="'BoxImg_'+item.id+item.type">
+			<img :src="item.data.icondata" class="image-viewer__img thumbnail" />
+			<img
+				@load="MainImgload"
+				:data-rid="item.data.rid"
+				:src="item.data.originalimg"
+				class="image-viewer__img max opacity" />
+		</div>
+	</div>
 	
 </div>
 <script type="text/javascript">
@@ -81,12 +75,12 @@
 				self.TouchPage.distance = sectouch.pageX - self.TouchPage.clickX;
 				if(self.TouchPage.distance>0){
 					if(self.paths.length<2){
-						showToast('{lang has_last_picture}');
+						ElMessage({message:'{lang has_last_picture}',grouping:true,type:'warning'});
 						self.TouchPage.move = false;
 						return false;
 					}
 					if(self.ridIndex == 0){
-						showToast('{lang has_last_picture}');
+						ElMessage({message:'{lang has_last_picture}',grouping:true,type:'warning'});
 						self.TouchPage.move = false;
 						return false;
 					}
@@ -100,19 +94,21 @@
 				}
 				if(self.TouchPage.distance<0){
 					if(self.paths.length<2){
-						showToast('{lang has_last_picture1}');
+						ElMessage({message:'{lang has_last_picture1}',grouping:true,type:'warning'});
 						self.TouchPage.move = false;
 						return false;
 					}
-					
+
 					if(window.parent.dzzoffice && window.parent.dzzoffice.WindowThis && window.parent.dzzoffice.WindowThis.ImageDataParam && window.parent.dzzoffice.WindowThis.ImageDataParam.ismore){
 						if(self.ridIndex == self.paths.length-1){
-							self.$message .error('{lang has_last_picture1}');
+
+							ElMessage({message:'{lang has_last_picture1}',grouping:true,type:'error'});
 							return false;
 						}
 					}else{
 						if(self.ridIndex == self.paths.length-1){
-							showToast('{lang has_last_picture1}');
+
+							ElMessage({message:'{lang has_last_picture1}',grouping:true,type:'warning'});
 							self.TouchPage.move = false;
 							return false;
 						}
