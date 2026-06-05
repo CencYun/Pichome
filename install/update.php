@@ -720,7 +720,7 @@ elseif ($_GET['step'] == 'prepare') {
                     DB::insert('app_open',array(
                         'ext'=>'md',
                         'appid'=>$appid,
-                        'default'=>1
+                        'isdefault'=>1
                     ),1,1);
                 }
                 //处理相关挂载点
